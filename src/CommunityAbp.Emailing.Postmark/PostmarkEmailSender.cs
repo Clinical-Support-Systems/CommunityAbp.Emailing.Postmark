@@ -107,13 +107,84 @@ public class PostmarkEmailSender(ICurrentTenant currentTenant, ISmtpEmailSenderC
                 await SendAsync(mailMessage);
             }
         }
+        else if (additionalEmailSendingArgs?.ExtraProperties?.ContainsKey(AbpPostmarkConsts.PostmarkAlias) == true)
+        {
+            // Safely attempt to retrieve and unbox the PostmarkTemplateId
+            var postmarkAliasObj = additionalEmailSendingArgs?.ExtraProperties?.GetOrDefault(AbpPostmarkConsts.PostmarkAlias);
+            var postmarkAlias = postmarkAliasObj is string v ? v : default; // Use default(string) or a specific default value
+
+            // Safely attempt to retrieve and cast the TemplateModel
+            var templateModelObj = additionalEmailSendingArgs?.ExtraProperties?.GetOrDefault(AbpPostmarkConsts.TemplateModel);
+            var templateModel = templateModelObj as Dictionary<string, object> ?? [];
+
+            if (postmarkAlias != default)
+            {
+                await SendTemplatedEmailAsync(mailMessage, postmarkAlias, templateModel);
+            }
+            else
+            {
+                await SendAsync(mailMessage);
+            }
+        }
         else
         {
             // Handle non-templated email sending (existing logic)
             await SendAsync(mailMessage);
         }
     }
+    
+    private async Task SendTemplatedEmailAsync(MailMessage mail, long postmarkTemplateId, Dictionary<string, object> templateModel)
+    {
+        var client = await BuildClientAsync();
+        var mailMessage = await ConvertToPostmarkMessage(mail);
 
+        // Now, instead of setting the body, we'll use the template fields
+        var templatedMessage = new TemplatedPostmarkMessage
+        {
+            From = mailMessage.From,
+            To = mailMessage.To,
+            Cc = mailMessage.Cc,
+            Bcc = mailMessage.Bcc,
+            TemplateId = postmarkTemplateId,
+            TemplateModel = templateModel,
+            Headers = mailMessage.Headers,
+            Attachments = mailMessage.Attachments,
+            ReplyTo = mailMessage.ReplyTo,
+            Tag = mailMessage.Tag,
+            TrackOpens = mailMessage.TrackOpens,
+            TrackLinks = mailMessage.TrackLinks,
+            MessageStream = mailMessage.MessageStream
+        };
+
+        await client.SendEmailWithTemplateAsync(templatedMessage);
+    }
+
+    private async Task SendTemplatedEmailAsync(MailMessage mail, string postmarkAlias, Dictionary<string, object> templateModel)
+    {
+        var client = await BuildClientAsync();
+        var mailMessage = await ConvertToPostmarkMessage(mail);
+
+        // Now, instead of setting the body, we'll use the template fields
+        var templatedMessage = new TemplatedPostmarkMessage
+        {
+            From = mailMessage.From,
+            To = mailMessage.To,
+            Cc = mailMessage.Cc,
+            Bcc = mailMessage.Bcc,
+            TemplateAlias = postmarkAlias,
+            TemplateModel = templateModel,
+            Headers = mailMessage.Headers,
+            Attachments = mailMessage.Attachments,
+            ReplyTo = mailMessage.ReplyTo,
+            Tag = mailMessage.Tag,
+            TrackOpens = mailMessage.TrackOpens,
+            TrackLinks = mailMessage.TrackLinks,
+            MessageStream = mailMessage.MessageStream
+        };
+
+        await client.SendEmailWithTemplateAsync(templatedMessage);
+    }
+    
     /// <summary>
     /// Send the email
     /// </summary>
