@@ -87,48 +87,52 @@ public class PostmarkEmailSender(ICurrentTenant currentTenant, ISmtpEmailSenderC
     {
         var mailMessage = BuildMailMessage(null, to, subject, body, isBodyHtml, additionalEmailSendingArgs);
 
-        // Check if we are sending a templated email
-        if (additionalEmailSendingArgs?.ExtraProperties?.ContainsKey(AbpPostmarkConsts.PostmarkTemplateId) == true && (AbpPostmarkOptions.UsePostmark ?? false))
+        if (AbpPostmarkOptions.UsePostmark ?? false)
         {
-            // Safely attempt to retrieve and unbox the PostmarkTemplateId
-            var postmarkTemplateIdObj = additionalEmailSendingArgs.ExtraProperties?.GetOrDefault(AbpPostmarkConsts.PostmarkTemplateId);
-            var postmarkTemplateId = postmarkTemplateIdObj is long v ? v : default; // Use default(long) or a specific default value
-
             // Safely attempt to retrieve and cast the TemplateModel
-            var templateModelObj = additionalEmailSendingArgs.ExtraProperties?.GetOrDefault(AbpPostmarkConsts.TemplateModel);
+            var templateModelObj = additionalEmailSendingArgs?.ExtraProperties?.GetOrDefault(AbpPostmarkConsts.TemplateModel);
             var templateModel = templateModelObj as Dictionary<string, object> ?? [];
 
-            if (postmarkTemplateId != default)
+            // Check if we are sending a templated email by template id or by template alias
+            if (additionalEmailSendingArgs?.ExtraProperties?.ContainsKey(AbpPostmarkConsts.PostmarkTemplateId) == true)
             {
-                await SendTemplatedEmailAsync(mailMessage, postmarkTemplateId, templateModel);
+                // Safely attempt to retrieve and unbox the PostmarkTemplateId
+                var postmarkTemplateIdObj = additionalEmailSendingArgs.ExtraProperties?.GetOrDefault(AbpPostmarkConsts.PostmarkTemplateId);
+                var postmarkTemplateId = postmarkTemplateIdObj is long v ? v : default; // Use default(long) or a specific default value
+
+                if (postmarkTemplateId != default)
+                {
+                    await SendTemplatedEmailAsync(mailMessage, postmarkTemplateId, templateModel);
+                }
+                else
+                {
+                    await SendAsync(mailMessage);
+                }
+            }
+            else if (additionalEmailSendingArgs?.ExtraProperties?.ContainsKey(AbpPostmarkConsts.PostmarkAlias) == true)
+            {
+                // Safely attempt to retrieve and unbox the PostmarkTemplateId
+                var postmarkAliasObj = additionalEmailSendingArgs.ExtraProperties?.GetOrDefault(AbpPostmarkConsts.PostmarkAlias);
+                var postmarkAlias = postmarkAliasObj is string v ? v : default; // Use default(string) or a specific default value
+
+                if (postmarkAlias != default)
+                {
+                    await SendTemplatedEmailAsync(mailMessage, postmarkAlias, templateModel);
+                }
+                else
+                {
+                    await SendAsync(mailMessage);
+                }
             }
             else
             {
-                await SendAsync(mailMessage);
-            }
-        }
-        else if (additionalEmailSendingArgs?.ExtraProperties?.ContainsKey(AbpPostmarkConsts.PostmarkAlias) == true)
-        {
-            // Safely attempt to retrieve and unbox the PostmarkTemplateId
-            var postmarkAliasObj = additionalEmailSendingArgs.ExtraProperties?.GetOrDefault(AbpPostmarkConsts.PostmarkAlias);
-            var postmarkAlias = postmarkAliasObj is string v ? v : default; // Use default(string) or a specific default value
-
-            // Safely attempt to retrieve and cast the TemplateModel
-            var templateModelObj = additionalEmailSendingArgs.ExtraProperties?.GetOrDefault(AbpPostmarkConsts.TemplateModel);
-            var templateModel = templateModelObj as Dictionary<string, object> ?? [];
-
-            if (postmarkAlias != default)
-            {
-                await SendTemplatedEmailAsync(mailMessage, postmarkAlias, templateModel);
-            }
-            else
-            {
+                // Handle non-templated email sending (existing logic)
                 await SendAsync(mailMessage);
             }
         }
         else
         {
-            // Handle non-templated email sending (existing logic)
+            // Handle non-postmark
             await SendAsync(mailMessage);
         }
     }
