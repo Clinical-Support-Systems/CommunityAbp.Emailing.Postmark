@@ -113,7 +113,7 @@ public class PostmarkEmailSender(ICurrentTenant currentTenant, ISmtpEmailSenderC
             {
                 // Safely attempt to retrieve and unbox the PostmarkTemplateId
                 var postmarkAliasObj = additionalEmailSendingArgs.ExtraProperties?.GetOrDefault(AbpPostmarkConsts.PostmarkAlias);
-                var postmarkAlias = postmarkAliasObj is string v ? v : default; // Use default(string) or a specific default value
+                var postmarkAlias = postmarkAliasObj as string ?? default; // Use default(string) or a specific default value
 
                 if (postmarkAlias != default)
                 {
