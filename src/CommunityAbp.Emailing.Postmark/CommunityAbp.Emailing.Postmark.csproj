@@ -23,9 +23,14 @@
 		<RootNamespace />
 		<Company>Clinical Support Systems</Company>
 		<Authors>kfrancis</Authors>
-		<Description>Postmark is a cross-platform, popular open source mail client library for .net. This abp module provides an integration package to use the Postmark as the email sender.</Description>
+		<Description>Postmark is a cross-platform, popular open-source mail client library for .net. This ABP module provides an integration package to use the Postmark as the email sender.</Description>
 		<PackageProjectUrl>https://github.com/Clinical-Support-Systems/CommunityAbp.Emailing.Postmark</PackageProjectUrl>
 		<PackageIcon>AbpPostmarkIcon.png</PackageIcon>
+	</PropertyGroup>
+
+	<PropertyGroup>
+	  <MinVerTagPrefix>v</MinVerTagPrefix>
+	  <MinVerSkip>false</MinVerSkip>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|netstandard2.0|AnyCPU'">
